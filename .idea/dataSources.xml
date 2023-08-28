@@ -8,5 +8,12 @@
       <jdbc-url>jdbc:mysql://localhost:3306/JavaEE_POS_App</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="JavaEE_POS_App@localhost [2]" uuid="79d7ba36-a05e-46b0-9972-ba52c9f7a11c">
+      <driver-ref>mysql.8</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://localhost:3306/JavaEE_POS_App</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>
