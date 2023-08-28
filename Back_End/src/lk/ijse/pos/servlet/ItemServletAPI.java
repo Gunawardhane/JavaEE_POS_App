@@ -26,7 +26,7 @@ public class ItemServletAPI extends HttpServlet {
 
         try {
             Class.forName("com.mysql.jdbc.Driver");
-            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test3", "root", "1234");
+            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/JavaEE_POS_App", "root", "1234");
 
             PreparedStatement pstm = connection.prepareStatement("insert into item values(?,?,?,?)");
             pstm.setObject(1, itemCode);
@@ -67,7 +67,7 @@ public class ItemServletAPI extends HttpServlet {
 
         try {
             Class.forName("com.mysql.jdbc.Driver");
-            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test3", "root", "1234");
+            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/JavaEE_POS_App", "root", "1234");
             PreparedStatement pstm = connection.prepareStatement("select * from item");
             ResultSet rst = pstm.executeQuery();
 
@@ -117,7 +117,7 @@ public class ItemServletAPI extends HttpServlet {
         resp.addHeader("Access-Control-Allow-Origin", "*");
         try {
             Class.forName("com.mysql.jdbc.Driver");
-            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test3", "root", "1234");
+            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/JavaEE_POS_App", "root", "1234");
 
             PreparedStatement pstm = connection.prepareStatement("update item set Name=?,qty=?, Price=? where Code=?");
             pstm.setObject(4,itemCode);
@@ -164,7 +164,7 @@ public class ItemServletAPI extends HttpServlet {
         resp.addHeader("Access-Control-Allow-Origin", "*");
         try {
             Class.forName("com.mysql.jdbc.Driver");
-            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test3", "root", "1234");
+            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/JavaEE_POS_App", "root", "1234");
 
 
             PreparedStatement pstm2 = connection.prepareStatement("delete from item where Code=?");

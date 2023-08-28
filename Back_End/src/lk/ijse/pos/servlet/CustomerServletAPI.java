@@ -17,7 +17,7 @@ public class CustomerServletAPI extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
             Class.forName("com.mysql.jdbc.Driver");
-            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test3", "root", "1234");
+            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/JavaEE_POS_App", "root", "1234");
             PreparedStatement pstm = connection.prepareStatement("select * from customer");
             ResultSet rst = pstm.executeQuery();
 
@@ -63,7 +63,7 @@ public class CustomerServletAPI extends HttpServlet {
 
         try {
             Class.forName("com.mysql.jdbc.Driver");
-            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test3", "root", "1234");
+            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/JavaEE_POS_App", "root", "1234");
 
             PreparedStatement pstm = connection.prepareStatement("insert into customer values(?,?,?)");
             pstm.setObject(1, cusID);
@@ -107,7 +107,7 @@ public class CustomerServletAPI extends HttpServlet {
         resp.addHeader("Access-Control-Allow-Origin", "*");
         try {
             Class.forName("com.mysql.jdbc.Driver");
-            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test3", "root", "1234");
+            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/JavaEE_POS_App", "root", "1234");
 
 
             PreparedStatement pstm2 = connection.prepareStatement("delete from Customer where id=?");
@@ -155,7 +155,7 @@ public class CustomerServletAPI extends HttpServlet {
         resp.addHeader("Access-Control-Allow-Origin", "*");
         try {
             Class.forName("com.mysql.jdbc.Driver");
-            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test3", "root", "1234");
+            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/JavaEE_POS_App", "root", "1234");
 
             PreparedStatement pstm = connection.prepareStatement("update Customer set name=?,address=? where id=?");
             pstm.setObject(3,id);
