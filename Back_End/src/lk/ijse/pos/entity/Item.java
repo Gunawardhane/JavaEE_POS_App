@@ -6,12 +6,22 @@ public class Item {
     private int qtyOnHand;
     private double unitPrice;
 
+    public Item(String code) {
+    }
+
     public String getCode() {
         return code;
     }
 
     public void setCode(String code) {
         this.code = code;
+    }
+
+    public Item(String code, String description, int qtyOnHand, double unitPrice) {
+        this.code = code;
+        this.description = description;
+        this.qtyOnHand = qtyOnHand;
+        this.unitPrice = unitPrice;
     }
 
     public String getDescription() {

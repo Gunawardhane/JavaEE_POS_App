@@ -1,6 +1,9 @@
 package lk.ijse.jsp.entity;
 
 public class Customer {
+    public Customer(String id) {
+    }
+
     public String getId() {
         return id;
     }
