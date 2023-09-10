@@ -1,5 +1,7 @@
 package lk.ijse.jsp.dao;
 
+import lk.ijse.jsp.dao.custom.impl.CustomerDAOImpl;
+
 public class FactoryDAO {
     private static FactoryDAO factoryDAO;
 
