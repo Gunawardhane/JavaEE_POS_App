@@ -1,7 +1,5 @@
 package lk.ijse.jsp.servlet;
 
-import lk.ijse.jsp.servlet.util.DBConnection;
-
 import javax.json.*;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;

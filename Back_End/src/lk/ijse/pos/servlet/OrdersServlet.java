@@ -1,7 +1,5 @@
 package lk.ijse.jsp.servlet;
 
-import lk.ijse.jsp.servlet.util.DBConnection;
-
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
