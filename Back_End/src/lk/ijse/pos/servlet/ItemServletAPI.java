@@ -1,6 +1,15 @@
 package lk.ijse.jsp.servlet;
 
+import lk.ijse.jsp.bo.BOTypes;
+import lk.ijse.jsp.bo.FactoryBO;
+import lk.ijse.jsp.bo.custom.impl.ItemBOImpl;
+import lk.ijse.jsp.dto.ItemDTO;
+import lk.ijse.jsp.util.ResponseUtil;
+import org.apache.commons.dbcp2.BasicDataSource;
+
 import javax.json.*;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -11,159 +20,75 @@ import java.sql.*;
 @WebServlet(urlPatterns = "/pages/item")
 public class ItemServletAPI extends HttpServlet {
 
+    private final ItemBOImpl itemBO = (ItemBOImpl) FactoryBO.getFactoryBO().getInstance(BOTypes.ITEM);
+
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        ServletContext servletContext = getServletContext();
+        BasicDataSource dbcp = (BasicDataSource) servletContext.getAttribute("dbcp");
+
+
+        try (Connection connection = dbcp.getConnection()) {
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM item");
+            ResultSet resultSet = preparedStatement.executeQuery();
+            JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+            while (resultSet.next()) {
+                arrayBuilder.add(Json.createObjectBuilder()
+                        .add("code", resultSet.getString(1))
+                        .add("name", resultSet.getString(2))
+                        .add("price", resultSet.getString(3))
+                        .add("qty", resultSet.getString(4))
+                        .build()
+                );
+            }
+
+            resp.getWriter().print(ResponseUtil.getResJsonObject("Ok","Successfully loaded...!",arrayBuilder.build()));
+        } catch (SQLException e) {
+            resp.setStatus(400);
+            resp.getWriter().print(ResponseUtil.getResJsonObject("Error","Not loaded...!"));
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
-            resp.addHeader("Access-Control-Allow-Origin", "*");
-
-            Connection connection = DBConnection.getDBConnection().getConnection();
-            PreparedStatement pstm = connection.prepareStatement("select * from Item");
-            ResultSet rst = pstm.executeQuery();
-
-            JsonArrayBuilder allItems = Json.createArrayBuilder();
-            while (rst.next()) {
-                String code = rst.getString(1);
-                String itemName = rst.getString(2);
-                int qty = rst.getInt(3);
-                double unitPrice = rst.getDouble(4);
-
-                JsonObjectBuilder itemObject = Json.createObjectBuilder();
-                itemObject.add("code", code);
-                itemObject.add("itemName", itemName);
-                itemObject.add("qty", qty);
-                itemObject.add("unitPrice", unitPrice);
-                allItems.add(itemObject.build());
+            if (itemBO.addItem(new ItemDTO(req.getParameter("code"), req.getParameter("name"), Double.parseDouble(req.getParameter("price")), Integer.parseInt(req.getParameter("qty"))))) {
+                resp.getWriter().print(ResponseUtil.getResJsonObject("Error","Successfully Added...!"));
+            }else {
+                resp.getWriter().print(ResponseUtil.getResJsonObject("Error","Not Added...!"));
             }
-
-            resp.getWriter().print(allItems.build());
-
-        } catch (ClassNotFoundException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
-            resp.setStatus(500);
-
         } catch (SQLException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
             resp.setStatus(400);
+            resp.getWriter().print(ResponseUtil.getResJsonObject("Error",e.getMessage()));
         }
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String code = req.getParameter("code");
-        String itemName = req.getParameter("description");
-        String qty = req.getParameter("qty");
-        String unitPrice = req.getParameter("unitPrice");
-
-        resp.addHeader("Content-Type", "application/json");
-        resp.addHeader("Access-Control-Allow-Origin", "*");
-        try {
-            Connection connection = DBConnection.getDBConnection().getConnection();
-            PreparedStatement pstm = connection.prepareStatement("insert into Item values(?,?,?,?)");
-
-            pstm.setObject(1, code);
-            pstm.setObject(2, itemName);
-            pstm.setObject(3, qty);
-            pstm.setObject(4, unitPrice);
-
-            if (pstm.executeUpdate() > 0) {
-                showMessage(resp, code + " Successfully Added..!", "ok", "[]");
-                resp.setStatus(200);
-            } else {
-                showMessage(resp, "Wrong data", "error", "[]");
-                resp.setStatus(400);
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        JsonObject jsonObject = Json.createReader(req.getReader()).readObject();
+        try  {
+            if (itemBO.updateItem(new ItemDTO(jsonObject.getString("code"),jsonObject.getString("name"),Double.parseDouble(jsonObject.getString("price")),Integer.parseInt(jsonObject.getString("qty"))))) {
+                resp.getWriter().print(ResponseUtil.getResJsonObject("OK","Successfully Updated...!"));
+            }else {
+                resp.getWriter().print(ResponseUtil.getResJsonObject("Error","Not Updated...!"));
             }
-
-        } catch (ClassNotFoundException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
-            resp.setStatus(500);
-
         } catch (SQLException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
             resp.setStatus(400);
+            resp.getWriter().print(ResponseUtil.getResJsonObject("Error",e.getMessage()));
         }
     }
 
     @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        JsonReader reader = Json.createReader(req.getReader());
-        JsonObject jsonObject = reader.readObject();
-
-        String code = jsonObject.getString("code");
-        String itemName = jsonObject.getString("itemName");
-        String qty = jsonObject.getString("qty");
-        String unitPrice = jsonObject.getString("unitPrice");
-
-        resp.addHeader("Content-Type", "application/json");
-        resp.addHeader("Access-Control-Allow-Origin", "*");
-        try {
-            Connection connection = DBConnection.getDBConnection().getConnection();
-            PreparedStatement pstm3 = connection.prepareStatement("update Item set itemName=?,qty=?,unitPrice=? where code=?");
-
-            pstm3.setObject(1, itemName);
-            pstm3.setObject(2, qty);
-            pstm3.setObject(3, unitPrice);
-            pstm3.setObject(4, code);
-
-            if (pstm3.executeUpdate() > 0) {
-                showMessage(resp, code + " Item Updated..!", "ok", "[]");
-                resp.setStatus(200);
-            } else {
-                showMessage(resp, code + " Item is not exist..!", "error", "[]");
-                resp.setStatus(400);
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        try  {
+            if (itemBO.deleteItem(new ItemDTO(req.getParameter("code")))) {
+                resp.getWriter().print(ResponseUtil.getResJsonObject("Ok","Successfully Deleted...!"));
+            }else {
+                resp.getWriter().print(ResponseUtil.getResJsonObject("Error","Not Deleted...!"));
             }
-
-        } catch (ClassNotFoundException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
-            resp.setStatus(500);
-
         } catch (SQLException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
             resp.setStatus(400);
+            resp.getWriter().print(ResponseUtil.getResJsonObject("Error",e.getMessage()));
         }
-    }
-
-    @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String code = req.getParameter("code");
-        resp.addHeader("Content-type", "application/json");
-        resp.addHeader("Access-Control-Allow-Origin", "*");
-
-        try{
-            Connection connection = DBConnection.getDBConnection().getConnection();
-            PreparedStatement pstm = connection.prepareStatement("delete from Item where code=?");
-            pstm.setObject(1, code);
-            resp.addHeader("Content-Type", "application/json");
-
-            if (pstm.executeUpdate() > 0) {
-                showMessage(resp, code + " Item Deleted..!", "ok", "[]");
-                resp.setStatus(200);
-            } else {
-                showMessage(resp, "Item with code " + code + " not found.", "error", "[]");
-                resp.setStatus(400);
-            }
-        } catch (ClassNotFoundException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
-            resp.setStatus(500);
-
-        } catch (SQLException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
-            resp.setStatus(400);
-        }
-    }
-
-    private void showMessage(HttpServletResponse resp, String message, String state, String data) throws IOException {
-        JsonObjectBuilder response = Json.createObjectBuilder();
-        response.add("state", state);
-        response.add("message", message);
-        response.add("data", data);
-        resp.getWriter().print(response.build());
-    }
-
-    @Override
-    protected void doOptions(HttpServletRequest req, HttpServletResponse resp) {
-        resp.addHeader("Access-Control-Allow-Origin", "*");
-        resp.addHeader("Access-Control-Allow-Methods", "PUT");
-        resp.addHeader("Access-Control-Allow-Methods", "DELETE");
-        resp.addHeader("Access-Control-Allow-Headers", "Content-type");
     }
 }

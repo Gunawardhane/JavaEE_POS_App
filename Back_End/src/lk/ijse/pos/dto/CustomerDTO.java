@@ -16,6 +16,9 @@ public class CustomerDTO {
         this.salary = salary;
     }
 
+    public CustomerDTO(String cusID) {
+    }
+
     public String getId() {
         return id;
     }

@@ -1,6 +1,14 @@
 package lk.ijse.jsp.servlet;
 
+import lk.ijse.jsp.bo.BOTypes;
+import lk.ijse.jsp.bo.FactoryBO;
+import lk.ijse.jsp.bo.custom.impl.CustomerBOImpl;
+import lk.ijse.jsp.dto.CustomerDTO;
+import lk.ijse.jsp.util.ResponseUtil;
+import org.apache.commons.dbcp2.BasicDataSource;
+
 import javax.json.*;
+import javax.servlet.ServletContext;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -10,156 +18,83 @@ import java.sql.*;
 
 @WebServlet(urlPatterns = {"/pages/customer"})
 public class CustomerServletAPI extends HttpServlet {
+    private final CustomerBOImpl customerBO = (CustomerBOImpl) FactoryBO.getFactoryBO().getInstance(BOTypes.CUSTOMER);
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            resp.addHeader("Access-Control-Allow-Origin", "*");
 
-            Connection connection = DBConnection.getDBConnection().getConnection();
-            PreparedStatement pstm = connection.prepareStatement("select * from customer");
-            ResultSet rst = pstm.executeQuery();
 
-            JsonArrayBuilder allCustomers = Json.createArrayBuilder();
-            while (rst.next()) {
-                String id = rst.getString(1);
-                String name = rst.getString(2);
-                String address = rst.getString(3);
 
-                JsonObjectBuilder customerObject = Json.createObjectBuilder();
-                customerObject.add("id", id);
-                customerObject.add("name", name);
-                customerObject.add("address", address);
-                allCustomers.add(customerObject.build());
+            ServletContext servletContext = getServletContext();
+            BasicDataSource dbcp = (BasicDataSource) servletContext.getAttribute("dbcp");
+
+            try (Connection connection = dbcp.getConnection()){
+                PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM customer");
+                ResultSet resultSet = preparedStatement.executeQuery();
+                JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+                while (resultSet.next()) {
+                    arrayBuilder.add(
+                            Json.createObjectBuilder()
+                                    .add("cusID", resultSet.getString(1))
+                                    .add("cusName", resultSet.getString(2))
+                                    .add("cusAddress", resultSet.getString(3))
+                                    .add("cusSalary", resultSet.getString(4))
+                    );
+                }
+                resp.getWriter().print(ResponseUtil.getResJsonObject("Error","Successfully loaded...!",arrayBuilder.build()));
+            } catch (SQLException e) {
+                resp.setStatus(400);
+                resp.getWriter().print(ResponseUtil.getResJsonObject("Error",e.getMessage()));
             }
 
-            resp.getWriter().print(allCustomers.build());
 
-        } catch (ClassNotFoundException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
-            resp.setStatus(500);
-
-        } catch (SQLException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
-            resp.setStatus(400);
-        }
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String cusID = req.getParameter("cusID");
-        String cusName = req.getParameter("cusName");
-        String cusAddress = req.getParameter("cusAddress");
-
-        resp.addHeader("Content-Type", "application/json");
-        resp.addHeader("Access-Control-Allow-Origin", "*");
-        try {
-            Connection connection = DBConnection.getDBConnection().getConnection();
-            PreparedStatement pstm = connection.prepareStatement("insert into customer values(?,?,?)");
-
-            pstm.setObject(1, cusID);
-            pstm.setObject(2, cusName);
-            pstm.setObject(3, cusAddress);
-
-            if (pstm.executeUpdate() > 0) {
-                showMessage(resp, cusID + " Successfully Added..!", "ok", "[]");
-                resp.setStatus(200);
-            } else {
-                showMessage(resp, "Wrong data", "error", "[]");
-                resp.setStatus(400);
+        try{
+            if (customerBO.addCustomer(new CustomerDTO(req.getParameter("cusID"),req.getParameter("CusName"),req.getParameter("cusAddress"),req.getParameter("cusSalary")))) {
+                resp.getWriter().print(ResponseUtil.getResJsonObject("Ok","Successfully Added...!"));
+            }else {
+                resp.getWriter().print(ResponseUtil.getResJsonObject("Error","Not Added...!"));
             }
-
-        } catch (ClassNotFoundException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
-            resp.setStatus(500);
-
         } catch (SQLException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
             resp.setStatus(400);
+            resp.getWriter().print(ResponseUtil.getResJsonObject("Error",e.getMessage()));
         }
     }
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        JsonReader reader = Json.createReader(req.getReader());
-        JsonObject jsonObject = reader.readObject();
+        JsonObject jsonObject = Json.createReader(req.getReader()).readObject();
 
-        String cusID = jsonObject.getString("cusID");
-        String cusName = jsonObject.getString("cusName");
-        String cusAddress = jsonObject.getString("cusAddress");
-
-        resp.addHeader("Content-Type", "application/json");
-        resp.addHeader("Access-Control-Allow-Origin", "*");
         try {
-            Connection connection = DBConnection.getDBConnection().getConnection();
-            PreparedStatement pstm3 = connection.prepareStatement("update customer set cusName=?,cusAddress=? where cusID=?");
-
-            pstm3.setObject(3, cusID);
-            pstm3.setObject(1, cusName);
-            pstm3.setObject(2, cusAddress);
-
-            if (pstm3.executeUpdate() > 0) {
-                showMessage(resp, cusID + " Customer Updated..!", "ok", "[]");
-                resp.setStatus(200);
-            } else {
-                showMessage(resp, cusID + " Customer is not exist..!", "error", "[]");
-                resp.setStatus(400);
+            if (customerBO.updateCustomer(new CustomerDTO(jsonObject.getString("cusID"),jsonObject.getString("cusName"),jsonObject.getString("cusAddress"),jsonObject.getString("cusSalary")))) {
+                resp.getWriter().print(ResponseUtil.getResJsonObject("Ok","Successfully Updated...!"));
+            }else{
+                resp.getWriter().print(ResponseUtil.getResJsonObject("Error","Not Updated...!"));
             }
-
-        } catch (ClassNotFoundException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
-            resp.setStatus(500);
-
         } catch (SQLException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
             resp.setStatus(400);
+            resp.getWriter().print(ResponseUtil.getResJsonObject("Error",e.getMessage()));
+        }
         }
     }
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String cusID = req.getParameter("cusID");
-        resp.addHeader("Content-type", "application/json");
-        resp.addHeader("Access-Control-Allow-Origin", "*");
-
         try {
-            Connection connection = DBConnection.getDBConnection().getConnection();
-            PreparedStatement pstm = connection.prepareStatement("delete from customer where cusID=?");
-            pstm.setObject(1, cusID);
-
-            if (pstm.executeUpdate() > 0) {
-                showMessage(resp, cusID + " Customer Deleted..!", "ok", "[]");
-                resp.setStatus(200);
-            } else {
-                showMessage(resp, "Customer with ID " + cusID + " not found.", "error", "[]");
-                resp.setStatus(400);
+            if (customerBO.deleteCustomer(new CustomerDTO(req.getParameter("cusID")))) {
+                resp.getWriter().print(ResponseUtil.getResJsonObject("Ok","Successfully Deleted...!"));
+            }else {
+                resp.getWriter().print(ResponseUtil.getResJsonObject("Error","Not Deleted...!"));
             }
-
-        } catch (ClassNotFoundException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
-            resp.setStatus(500);
-
         } catch (SQLException e) {
-            showMessage(resp, e.getMessage(), "error", "[]");
             resp.setStatus(400);
+            resp.getWriter().print(ResponseUtil.getResJsonObject("Error",e.getMessage()));
         }
     }
 
-    private void showMessage(HttpServletResponse resp, String message, String state, String data) throws IOException {
-        JsonObjectBuilder response = Json.createObjectBuilder();
-        response.add("state", state);
-        response.add("message", message);
-        response.add("data", data);
-        resp.getWriter().print(response.build());
-    }
-
-    @Override
-    protected void doOptions(HttpServletRequest req, HttpServletResponse resp) {
-        resp.addHeader("Access-Control-Allow-Origin", "*");
-        resp.addHeader("Access-Control-Allow-Methods", "PUT");
-        resp.addHeader("Access-Control-Allow-Methods", "DELETE");
-        resp.addHeader("Access-Control-Allow-Headers", "Content-type");
-    }
 }
 
 
